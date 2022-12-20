@@ -268,6 +268,33 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
         is_msg_dlg_already_exist = false;
     }
 
+	if (config->option<ConfigOptionInt>("support_interface_filament")->value != 0 && (config->opt_float("support_top_z_distance") != 0 || config->opt_float("support_interface_spacing") != 0 || config->opt_enum<SupportMaterialInterfacePattern>("support_interface_pattern") != SupportMaterialInterfacePattern::smipConcentric))
+	{
+		wxString msg_text = _(L("It's better to set Top Z distance=0,interface spacing=0, interface pattern=concentric"));
+		msg_text += "\n\n" + _(L("Change these settings automatically? \n"
+			"Yes - Change these settings\n"
+			"No  - Configure manually"));
+		MessageDialog dialog(m_msg_dlg_parent, msg_text, "",
+			wxICON_WARNING | (true ? wxYES | wxNO : wxOK));
+		DynamicPrintConfig new_conf = *config;
+		is_msg_dlg_already_exist = true;
+		auto answer = dialog.ShowModal();
+		if (answer == wxID_YES)
+		{
+			new_conf.set_key_value("support_top_z_distance", new ConfigOptionFloat(0));
+			new_conf.set_key_value("support_interface_spacing", new ConfigOptionFloat(0));
+			new_conf.set_key_value("support_interface_pattern", new ConfigOptionEnum<SupportMaterialInterfacePattern>(SupportMaterialInterfacePattern::smipConcentric));
+		}
+		apply(config, &new_conf);
+		if (cb_value_change)
+		{
+			cb_value_change("support_top_z_distance", 0);
+			cb_value_change("support_interface_spacing", 0);
+			cb_value_change("support_interface_pattern", SupportMaterialInterfacePattern::smipConcentric);
+		}
+		is_msg_dlg_already_exist = false;
+	}
+
     double sparse_infill_density = config->option<ConfigOptionPercent>("sparse_infill_density")->value;
     auto timelapse_type = config->opt_enum<TimelapseType>("timelapse_type");
 
